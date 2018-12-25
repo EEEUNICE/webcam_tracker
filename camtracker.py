@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 # Webcam EyeTracker classes
 # Edwin S. Dalmaijer
 # version 0.1, 12-10-2013
@@ -455,8 +458,8 @@ class Setup:
 		stagevars = {}
 		
 		stagevars[0] = {}
-		stagevars[0]['show_threshimg'] = False # False for showing snapshots, True for showing thresholded snapshots
-		stagevars[0]['use_prect'] = True # False for no pupil search limits, True for pupul rect
+		stagevars[0]['show_threshimg'] = False # True 显示为阈值图像
+		stagevars[0]['use_prect'] = True # True 显示瞳孔矩形
 
 		stagevars[1] =  {}
 		stagevars[1]['thresholdchange'] = None # None, 'up', or 'down'
@@ -532,9 +535,9 @@ class Setup:
 			
 			# stage 2: select eye by clicking on it
 			if stage == 2:
-				# check if input is a mouse click
+				# 输入为鼠标点击
 				if type(inp) in [tuple,list]:
-					# check if mouse position is in image
+					#确认点击位置没有出画
 					mpos = pygame.mouse.get_pos()
 					hposok = mpos[0] > blitpos[0] and mpos[0] < blitpos[0]+imgsize[0]
 					vposok = mpos[1] > blitpos[1] and mpos[1] < blitpos[1]+imgsize[1]
