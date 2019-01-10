@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-from sklearn.cluster import KMeans
-import time
-import numpy as np
+
+
 # Webcam EyeTracker classes
 # JJJJane
 # version 1.1, 01-10-2018
@@ -14,17 +13,6 @@ __author__ = "Edwin Dalmaijer"
 DEBUG = False
 BUFFSEP = 'edwinisdebeste'
 
-
-
-def cacu_point(p,left,right,dist):
-    '''
-    p 图像中瞳孔坐标
-    left 图像中左光斑坐标
-    right 图像中右光斑坐标
-    '''
-    x=(left[0]-p[0])*dist/(left[0]-right[0])
-    y=(left[1]-p[1])*dist/(left[0]-right[0])
-    return [x,y]
 
 # # # # #
 # imports
@@ -165,14 +153,15 @@ class Setup:
 
 		# set some more properties
 		self.img = pygame.surface.Surface(self.tracker.get_size())	# empty surface, gets filled out with camera images
-
-
 		self.settings = {'pupilcol':(0,0,0), \
-					'threshold_1':43, \
+					'threshold_1':100, \
+					'threshold_2':2, \
 					'nonthresholdcol':(100,100,255,255), \
 					'pupilpos': (camres[0]/2,camres[1]/2), \
+					'spotpos':(camres[0]/2,camres[1]/2), \
 					'pupilrect':pygame.Rect(camres[0]/2-50,camres[1]/2-25,100,50), \
 					'pupilbounds': [0,0,0,0], \
+					'spotbounds': [0,0,0,0], \
 					'':None					
 					}
 	
@@ -323,7 +312,7 @@ class Setup:
 		
 		# find image paths
 		imgpaths = {}
-		buttnames = ['1','2','3','4','5','up','down','t','space','r','escape','click','lock']
+		buttnames = ['1','2','3','up','down','t','space','r','escape']
 		buttstates = ['active','inactive']
 		for bn in buttnames:
 			imgpaths[bn] = {}
@@ -338,24 +327,20 @@ class Setup:
 		buttsize = (50,50)
 		camres = self.tracker.get_size()
 		buttpos = {}
-		y = 770
-		buttpos['1'] = 1580, y
-		buttpos['2'] = 1630, y
-		buttpos['3'] = 1680 , y
-		buttpos['4'] = 1730, y
-		buttpos['5'] = 1780 , y
-		buttpos['space'] = 1830, y
+		y = 1000
+		buttpos['1'] = int(930- buttsize[0]/2), y
+		buttpos['2'] = int(980- buttsize[0]/2), y
+		buttpos['3'] = int(1030 - buttsize[0]/2), y
+		buttpos['space'] = int(1080- buttsize[0]/2), y
 		
-		leftx = self.dispsize[0]-25  # center of the buttons on the right
-     
-
-		buttpos['up'] = leftx, 670 # above snapshot half, to the right
-		buttpos['down'] = leftx, 720 # below snapshot half, to the right
-		buttpos['t'] = leftx, 770 # same level as snapshot bottom, to the left
-		buttpos['r'] = leftx, 620  # halfway snapshot (==halfway display), to the left
+		leftx = self.dispsize[0]/2 - (camres[0]/2 + buttsize[0]) # center of the buttons on the right
+		rightx = self.dispsize[0]/2 + camres[0]/2 + buttsize[0] # center of the buttons on the left
+		buttpos['up'] = rightx, self.dispsize[1]/2-buttsize[1] # above snapshot half, to the right
+		buttpos['down'] = rightx, self.dispsize[1]/2+buttsize[1] # below snapshot half, to the right
+		buttpos['t'] = leftx, self.dispsize[1]/2+camres[1]/2-buttsize[1]/2 # same level as snapshot bottom, to the left
+		buttpos['r'] = leftx, self.dispsize[1]/2 # halfway snapshot (==halfway display), to the left
 		buttpos['escape'] = buttsize[0], buttsize[1] # top left
-		buttpos['click'] = leftx-50,720
-		buttpos['lock'] =leftx-50,670
+		
 		# new dict for button properties (image, position, and rect)
 		self.buttons = {}
 		# loop through button names
@@ -416,23 +401,20 @@ class Setup:
 		
 		# clear display
 		self.disp.fill(self.bgc)
-		background=pygame.image.load(r"bg_num.png")  #图片位置
+		background=pygame.image.load(r"bg.png")  #图片位置
 		self.disp.blit(background,(0,0)) 
-        
-#		bb=pygame.image.load(r"2_01.gif") 
-#		self.draw_button(bb, (0,0))
-#		self.draw_button(bb, (646,0))
-#		self.draw_button(bb, (1293,0))
-#		self.draw_button(bb, (0,360))
-#		self.draw_button(bb, (646,360))
-#		self.draw_button(bb, (1293,360))
-#		self.draw_button(bb, (0,720))
-#		self.draw_button(bb, (646,720))
-#		self.draw_button(bb, (1293,720))	
-        
-        
+		bb=pygame.image.load(r"timg.jpeg") 
+		self.draw_button(bb, (0,0))
+		self.draw_button(bb, (646,0))
+		self.draw_button(bb, (1293,0))
+		self.draw_button(bb, (0,360))
+		self.draw_button(bb, (646,360))
+		self.draw_button(bb, (1293,360))
+		self.draw_button(bb, (0,720))
+		self.draw_button(bb, (646,720))
+		self.draw_button(bb, (1293,720))	
 		# universal buttons
-		buttonstodraw = ['1','2','3','4','5','space','escape','t','r']
+		buttonstodraw = ['1','2','3','space','escape','t','r']
 		activetodraw = []
 		
 		# stage specific buttons
@@ -448,14 +430,6 @@ class Setup:
 			title = "confirmation"
 			buttonstodraw.extend(['up','down'])
 			activetodraw.extend(['3'])
-		elif stagenr == 4:
-			title = "calibration"
-			buttonstodraw.extend(['up','down','click'])
-			activetodraw.extend(['4'])
-		elif stagenr == 5:
-			title = "confirmation"
-			buttonstodraw.extend(['up','down','lock'])
-			activetodraw.extend(['5'])		
 		else:
 			title = "loading, please wait..."
 
@@ -469,7 +443,7 @@ class Setup:
 		
 		# draw title
 		titsize = self.font.size(title) # author note: LOL, 'titsize'!
-		titpos = 1550, 800
+		titpos = self.dispsize[0]/2-titsize[0]/2, self.dispsize[1]/2-(self.tracker.get_size()[1]/2+titsize[1])
 		titsurf = self.font.render(title, True, self.fgc)
 		self.disp.blit(titsurf,titpos)
 	
@@ -516,21 +490,12 @@ class Setup:
 		stagevars[3] = {}
 		stagevars[3]['confirmed'] = False
 
-		stagevars[4] = {} 
-     		stagevars[4]['click_num'] =0
-		stagevars[4]['data_pos'] = [0 for i in range(9)]
-     		stagevars[4]['catch'] = None
-     
-		stagevars[5] = {}
-		stagevars[5]['output'] = False
-
-
 		# set Booleans
 		running = True			# turns False upon quiting the GUI
 		
 		# set image variables
 		imgsize = self.img.get_size()
-		blitpos = (1620,840)
+		blitpos = (0, 0)
 		
 		# # # # #
 		# run GUI
@@ -542,10 +507,10 @@ class Setup:
 			
 			# draw stage
 			self.draw_stage(stagenr=stage)
-
+			
 			# get new snapshot, thresholded image, and pupil measures (only use pupil bounding rect after stage 1)
 			useprect = stagevars[0]['use_prect'] and stage > 1
-			self.img, self.thresholded, pupilpos, pupilsize, pupilbounds= self.tracker.give_me_all(pupilrect=useprect)
+			self.img, self.thresholded, pupilpos, pupilsize, pupilbounds,self.thresholded_2, spotpos, spotsize, spotbounds= self.tracker.give_me_all(pupilrect=useprect)
 			
 			# update settings
 			self.settings = self.tracker.settings
@@ -571,8 +536,7 @@ class Setup:
 			
 			# handle input, according to the stage (this changes the stagevars!)
 			stage, stagevars = self.handle_input(inptype, inp, stage, stagevars)
-			pygame.draw.circle(self.img, (241,158,194), (120,80), 2)
-			pygame.draw.circle(self.img, (241,158,194), (135,80), 2)
+	
 			# # # # #
 			# stage specific
 			
@@ -598,7 +562,7 @@ class Setup:
 						# set pupil position
 						stagevars[2]['clickpos'] = inp[0]-blitpos[0], inp[1]-blitpos[1]
 						self.settings['pupilpos'] = stagevars[2]['clickpos'][:]
-
+						self.settings['spotpos'] = stagevars[2]['clickpos'][:]
 						# set pupil rect
 						x = stagevars[2]['clickpos'][0] - stagevars[2]['prectsize'][0]/2
 						y = stagevars[2]['clickpos'][1] - stagevars[2]['prectsize'][1]/2
@@ -642,71 +606,20 @@ class Setup:
 				# draw pupil center and pupilbounds in image
 				try: pygame.draw.rect(self.img, (0,255,0),pupilbounds,1); pygame.draw.rect(self.thresholded, (0,255,0),pupilbounds,1)
 				except: print("pupilbounds=%s" % pupilbounds)
-
+				try: pygame.draw.rect(self.img, (0,255,0),spotbounds,1); pygame.draw.rect(self.thresholded, (0,255,0),spotbounds,1)
+				except: print("spotbounds=%s" % spotbounds)
 				try: pygame.draw.circle(self.img, (255,0,0),pupilpos,3,0); pygame.draw.circle(self.thresholded, (255,0,0),pupilpos,3,0)
 				except: print("pupilpos=%s" % pupilpos)
+				try: pygame.draw.circle(self.img, (255,0,0),spotpos,3,0); pygame.draw.circle(self.thresholded, (255,0,0),spotpos,3,0)
+				except: print("spotpos=%s" % spotpos)
+				# is settings are confirmed, stop running
+				if stagevars[3]['confirmed']:
+					running = False
 
-#				# is settings are confirmed, stop running
-#				if stagevars[3]['confirmed']:
-#					running = False
-                    
-                    
-			if stage == 4:
-		
-				# draw pupil center and pupilbounds in image
-				try: pygame.draw.rect(self.img, (0,255,0),pupilbounds,1); pygame.draw.rect(self.thresholded, (0,255,0),pupilbounds,1)
-				except: print("pupilbounds=%s" % pupilbounds)
-
-				try: pygame.draw.circle(self.img, (255,0,0),pupilpos,3,0); pygame.draw.circle(self.thresholded, (255,0,0),pupilpos,3,0)
-				except: print("pupilpos=%s" % pupilpos)
-
-				if stagevars[4]['catch'] != None:
-					if stagevars[4]['catch'] == 'click' and stagevars[4]['click_num']<9:
-						 click_num=stagevars[4]['click_num']
-	               				 pos=pupilpos
-						 stagevars[4]['data_pos'][click_num]=pupilpos
-						 stagevars[4]['click_num']+=1 
-					stagevars[4]['catch'] = None
-	     				print(stagevars[4]['data_pos'])
-				if  stagevars[4]['click_num']==9:
-					point=[]
-					for i in stagevars[4]['data_pos']:
-						point.append(cacu_point(i,[120,80],[135,80],32))
-					clf = KMeans(n_clusters=9) 
-					s = clf.fit(point) #加载数据集合
-					centroids = clf.labels_
-					print centroids#显示中心点
-					print clf.inertia_  #显示聚类效果
-					stagevars[4]['catch'] = None
-
-
-			if stage == 5:
-				try: pygame.draw.rect(self.img, (0,255,0),pupilbounds,1); pygame.draw.rect(self.thresholded, (0,255,0),pupilbounds,1)
-				except: print("pupilbounds=%s" % pupilbounds)
-
-				try: pygame.draw.circle(self.img, (255,0,0),pupilpos,3,0); pygame.draw.circle(self.thresholded, (255,0,0),pupilpos,3,0)
-				except: print("pupilpos=%s" % pupilpos)
-
-
-				if stagevars[5]['output'] == True:
-                                        target=[cacu_point(pupilpos,[120,80],[135,80],32)]
-					print clf.predict(target)
-					num=np.where(centroids==clf.predict(target)[0])[0][0]+1
-					exec('background=pygame.image.load(r\"2_0%s.gif\")'%num)  #图片位置
-					self.disp.blit(background,(0,0)) 
-					stagevars[5]['output'] == False
-
-					#background=pygame.image.load(r"bg_num.png")  #图片位置
-					#self.disp.blit(background,(0,0)) 
-					#background=pygame.image.load(r"2_02.gif")  #图片位置
-					#self.disp.blit(background,(0,0)) 
 			# draw values
-			#starty = self.dispsize[1] - imgsize[1]/2
-
-			#vtx = self.dispsize[0] - imgsize[0]/2 - 10 # 10 isa
-			starty = 840
-			vtx = 1600
-			vals = ['pupil colour',str(self.settings['pupilcol']), 'threshold_1', str(self.settings['threshold_1']), 'pupil position', str(self.settings['pupilpos']), 'pupil rect', str(self.settings['pupilrect'])]
+			starty = self.dispsize[1]/2 - imgsize[1]/2
+			vtx = self.dispsize[0]/2 - imgsize[0]/2 - 10 # 10 isa
+			vals = ['pupil colour',str(self.settings['pupilcol']), 'threshold_1', str(self.settings['threshold_1']), 'pupil position', str(self.settings['pupilpos']), 'pupil rect', str(self.settings['pupilrect']), 'spot position', str(self.settings['spotpos'])]
 			for i in range(len(vals)):
 				# draw title
 				tsize = self.sfont.size(vals[i])
@@ -846,45 +759,33 @@ class Setup:
 			# up should increase threshold, down should decrease threshold
 			if inp in ['up','down']:
 				stagevars[1]['thresholdchange'] = inp
-		#	# space should confirm settings
-		#	if inp == 'space':
-		#		stagevars[3]['confirmed'] = True
-		# stage 4
-		elif stage == 4:
-			
-			if inp in ['click']:
-				stagevars[4]['catch'] = inp
-
-		# stage 5
-		elif stage == 5:
-
 			# space should confirm settings
-			if inp in  ['lock']:
-				stagevars[5]['output'] = True
+			if inp == 'space':
+				stagevars[3]['confirmed'] = True
 
-		 #space should move to next stage (but not in stage 5)
-		if inp == 'space' and stage < 5:
+		# space should move to next stage (but not in stage 3)
+		if inp == 'space' and stage < 3:
 			stage += 1
 		
-		#number keys should make the stage jump to that number
-		if inp in ['1','2','3','4','5']:
+		# number keys should make the stage jump to that number
+		if inp in ['1','2','3']:
 			stage = int(inp)
 		
-		#T should toggle between displays
+		# T should toggle between displays
 		if inp == 't':
 			if stagevars[0]['show_threshimg']:
 				stagevars[0]['show_threshimg'] = False
 			else:
 				stagevars[0]['show_threshimg'] = True
 		
-		#R should toggle between using pupil rect or not
+		# R should toggle between using pupil rect or not
 		if inp == 'r':
 			if stagevars[0]['use_prect']:
 				stagevars[0]['use_prect'] = False
 			else:
 				stagevars[0]['use_prect'] = True
 		
-		#escape should close down
+		# escape should close down
 		if inp == 'escape':
 			pygame.display.quit()
 			raise Exception("camtracker.Setup: Escape was pressed")
@@ -938,11 +839,14 @@ class CamEyeTracker:
 
 		# default settings
 		self.settings = {'pupilcol':(0,0,0), \
-					'threshold_1':43, \
+					'threshold_1':100, \
+					'threshold_2':2, \
 					'nonthresholdcol':(100,100,255,255), \
 					'pupilpos':(-1,-1), \
+					'spotpos':(-1,-1),\
 					'pupilrect':pygame.Rect(self.camres[0]/2-50,self.camres[1]/2-25,100,50), \
 					'pupilbounds': [0,0,0,0], \
+					'spotbounds':[0,0,0,0],\
 					'':None					
 					}
 	
@@ -1012,6 +916,29 @@ class CamEyeTracker:
 		
 		return thimg
 
+	def threshold_2_image(self, image):
+		
+		"""Applies a threshold to an image and returns the thresholded
+		image
+		
+		arguments
+		image			--	the image that should be thresholded, a
+						pygame.surface.Surface instance
+		
+		returns
+		thresholded		--	the thresholded image,
+						a pygame.surface.Surface instance
+		"""
+		
+		# surface to apply threshold to surface
+		thimg = pygame.surface.Surface(self.get_size(), 0, image)
+		
+		# perform thresholding
+		th = (self.settings['threshold_2'],self.settings['threshold_2'],self.settings['threshold_2'])
+		pygame.transform.threshold(thimg, image, self.settings['pupilcol'], th, self.settings['nonthresholdcol'], 1)
+		
+		return thimg	
+	
 	def find_pupil(self, thresholded, pupilrect=False):
 		
 		"""Get the pupil center, bounds, and size, based on the thresholded
@@ -1102,6 +1029,97 @@ class CamEyeTracker:
 		
 		return self.settings['pupilpos'], pupil.count(), self.settings['pupilbounds']
 	
+	def find_spot(self, thresholded, pupilrect=False):
+		
+		"""Get the spot center, bounds, and size, based on the thresholded
+		image; please note that the pupil bounds and size are very
+		arbitrary: they provide information on the pupil within the
+		thresholded image, meaning that they would appear larger if the
+		camera is placed closer towards a subject, even though the
+		subject's pupil does not dilate
+		
+		arguments
+		thresholded		--	a pygame.surface.Surface instance, as
+						returned by threshold_image
+		
+		keyword arguments
+		pupilrect		--	a Boolean indicating whether pupil searching
+						rect should be applied or not
+						(default = False)
+		
+		returns
+		spotcenter, spotsize, spotbounds
+					--	spotcenter is an (x,y) position tuple that
+						gives the spot center with regards to the
+						image (where the top left is (0,0))
+						spotsize is the amount of pixels that are
+						considered to be part of the pupil in the
+						thresholded image; when no spotbounds can
+						be found, this will return (-1,-1)
+						spotbounds is a (x,y,width,height) tuple,
+						specifying the size of the largest square
+						in which the spot would fit
+		"""
+		
+		
+		# cut out pupilrect (but only if pupil bounding rect option is on)
+		if pupilrect:
+			# pupil rect boundaries
+			rectbounds = pygame.Rect(self.settings['pupilrect'])
+			# correct rect edges that go beyond image boundaries
+			if self.settings['pupilrect'].left < 0:
+				rectbounds.left = 0
+			if self.settings['pupilrect'].right > self.camres[0]:
+				rectbounds.right = self.camres[0]
+			if self.settings['pupilrect'].top < 0:
+				rectbounds.top = 0
+			if self.settings['pupilrect'].bottom > self.camres[1]:
+				rectbounds.bottom = self.camres[1]
+			# cut rect out of image
+			thresholded = thresholded.subsurface(rectbounds)
+			ox, oy = thresholded.get_offset()
+		
+		# find potential spots areas based on threshold
+		th = (self.settings['threshold_2'],self.settings['threshold_2'],self.settings['threshold_2'])
+		mask = pygame.mask.from_threshold(thresholded, self.settings['spotcol'], th)
+		
+		# get largest connected area within mask (which should be the spot)
+		spot = mask.connected_component()
+		
+		# get pupil center
+		spotcenter = spot.centroid()
+		
+		# if we can only look within a rect around the pupil, do so
+		if pupilrect:
+			# compensate for subsurface offset
+			spotcenter = spotcenter[0]+ox, spotcenter[1]+oy
+			# check if the spot position is within the rect
+			if (self.settings['pupilrect'].left < spotcenter[0] < self.settings['pupilrect'].right) and (self.settings['pupilrect'].top < spotcenter[1] < self.settings['pupilrect'].bottom):
+				# set new spot and rect position
+				self.settings['spotpos'] = spotcenter
+				x = spotcenter[0] - self.settings['pupilrect'][2]/2
+				y = spotcenter[1] - self.settings['pupilrect'][3]/2
+				self.settings['pupilrect'] = pygame.Rect(x,y,self.settings['pupilrect'][2],self.settings['pupilrect'][3])
+			# if the spot is outside of the rect, return missing
+			else:
+				self.settings['spotpos'] = (-1,-1)
+		else:
+			self.settings['spotpos'] = spotcenter
+		
+		# get pupil bounds (sometimes failes, hence try-except)
+		try:
+			self.settings['spotbounds'] = spot.get_bounding_rects()[0]
+			# if we're using a pupil rect, compensate offset
+			if pupilrect:
+				self.settings['spotbounds'].left += ox
+				self.settings['spotlbounds'].top += oy
+		except:
+			# if it fails, we simply use the old rect
+			pass
+		
+		return self.settings['spotpos'], spot.count(), self.settings['spotbounds']
+
+	
 	def give_me_all(self, pupilrect=False):
 		
 		"""Returns snapshot, thresholded image, pupil position, pupil area,
@@ -1135,10 +1153,10 @@ class CamEyeTracker:
 		
 		img = self.get_snapshot()
 		thimg_1 = self.threshold_1_image(img)
-
+		thimg_2 = self.threshold_2_image(img)
 		ppos_1, parea_1, pbounds_1 = self.find_pupil(thimg_1, pupilrect)
-
-		return img, thimg_1, ppos_1, parea_1, pbounds_1
+		ppos_2, parea_2, pbounds_2 = self.find_pupil(thimg_2, pupilrect)
+		return img, thimg_1, ppos_1, parea_1, pbounds_1,thimg_2,ppos_2, parea_2, pbounds_2
 
 
 	
